@@ -1,4 +1,5 @@
-from typing import Any, BinaryIO, Optional
+from dataclasses import dataclass
+from typing import Any, BinaryIO, Optional, List, Sequence
 from ._stream_info import StreamInfo
 
 
@@ -37,6 +38,23 @@ class DocumentConverterResult:
     def __str__(self) -> str:
         """Return the converted Markdown text."""
         return self.markdown
+
+
+@dataclass
+class DocumentPage:
+    """Represent a single page of converted content."""
+
+    page_number: int
+    markdown: str
+
+
+class PagedDocumentConverterResult(DocumentConverterResult):
+    """A DocumentConverterResult that also stores page-level content."""
+
+    def __init__(self, pages: Sequence[DocumentPage], *, title: Optional[str] = None):
+        self.pages: List[DocumentPage] = list(pages)
+        markdown = "".join(page.markdown for page in self.pages)
+        super().__init__(markdown=markdown, title=title)
 
 
 class DocumentConverter:

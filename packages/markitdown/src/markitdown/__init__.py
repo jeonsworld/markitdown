@@ -8,7 +8,12 @@ from ._markitdown import (
     PRIORITY_SPECIFIC_FILE_FORMAT,
     PRIORITY_GENERIC_FILE_FORMAT,
 )
-from ._base_converter import DocumentConverterResult, DocumentConverter
+from ._base_converter import (
+    DocumentConverterResult,
+    DocumentConverter,
+    DocumentPage,
+    PagedDocumentConverterResult,
+)
 from ._stream_info import StreamInfo
 from ._exceptions import (
     MarkItDownException,
@@ -23,6 +28,8 @@ __all__ = [
     "MarkItDown",
     "DocumentConverter",
     "DocumentConverterResult",
+    "DocumentPage",
+    "PagedDocumentConverterResult",
     "MarkItDownException",
     "MissingDependencyException",
     "FailedConversionAttempt",

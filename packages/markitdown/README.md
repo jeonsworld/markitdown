@@ -39,6 +39,13 @@ result = md.convert("test.xlsx")
 print(result.text_content)
 ```
 
+```python
+# Retrieve page level content from PDFs
+result = md.convert("test.pdf", return_pages=True)
+for page in result.pages:
+    print(page.page_number, len(page.markdown))
+```
+
 ### More Information
 
 For more information, and full documentation, see the project [README.md](https://github.com/microsoft/markitdown) on GitHub.
