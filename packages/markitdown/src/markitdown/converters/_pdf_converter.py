@@ -74,15 +74,15 @@ class PdfConverter(DocumentConverter):
             )
 
         assert isinstance(file_stream, io.IOBase)  # for mypy
-        
+
         # Check if page-level extraction is requested
-        extract_pages = kwargs.get('extract_pages', False)
-        
+        extract_pages = kwargs.get("extract_pages", False)
+
         if extract_pages:
             # Extract text page by page
             pages = self._extract_pages(file_stream)
             # Combine all pages for the main markdown content
-            markdown = '\n\n'.join([page.content for page in pages])
+            markdown = "\n\n".join([page.content for page in pages])
             return DocumentConverterResult(
                 markdown=markdown,
                 pages=pages,
@@ -92,22 +92,22 @@ class PdfConverter(DocumentConverter):
             return DocumentConverterResult(
                 markdown=pdfminer.high_level.extract_text(file_stream),
             )
-    
+
     def _extract_pages(self, file_stream: BinaryIO) -> List[PageInfo]:
         """Extract text from each page separately."""
         pages = []
-        
+
         try:
             # Reset stream position
             file_stream.seek(0)
-            
+
             # Create resource manager
             rsrcmgr = PDFResourceManager()
             laparams = LAParams()
-            
+
             # Get all pages
             pdf_pages = list(PDFPage.get_pages(file_stream))
-            
+
             for page_num, page in enumerate(pdf_pages, 1):
                 output_string = None
                 device = None
@@ -116,27 +116,27 @@ class PdfConverter(DocumentConverter):
                     output_string = io.StringIO()
                     device = TextConverter(rsrcmgr, output_string, laparams=laparams)
                     interpreter = PDFPageInterpreter(rsrcmgr, device)
-                    
+
                     # Process the page
                     interpreter.process_page(page)
-                    
+
                     # Get the text content
                     text = output_string.getvalue()
-                    
+
                     # Add page info
                     pages.append(PageInfo(page_number=page_num, content=text.strip()))
-                    
+
                 finally:
                     # Clean up resources
                     if device:
                         device.close()
                     if output_string:
                         output_string.close()
-        
+
         except Exception:
             # If page-by-page extraction fails, fall back to full document extraction
             file_stream.seek(0)
             full_text = pdfminer.high_level.extract_text(file_stream)
             pages = [PageInfo(page_number=1, content=full_text.strip())]
-        
+
         return pages
