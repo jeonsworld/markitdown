@@ -16,7 +16,7 @@ try:
     from pdfminer.pdfpage import PDFPage
     from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
     from pdfminer.converter import TextConverter
-    from pdfminer.layout import LAParams
+    from pdfminer.layout import LAParams, LTPage, LTTextBox, LTTextLine
 except ImportError:
     # Preserve the error and stack trace for later
     _dependency_exc_info = sys.exc_info()
@@ -95,48 +95,17 @@ class PdfConverter(DocumentConverter):
 
     def _extract_pages(self, file_stream: BinaryIO) -> List[PageInfo]:
         """Extract text from each page separately."""
-        pages = []
-
-        try:
-            # Reset stream position
-            file_stream.seek(0)
-
-            # Create resource manager
-            rsrcmgr = PDFResourceManager()
-            laparams = LAParams()
-
-            # Get all pages
-            pdf_pages = list(PDFPage.get_pages(file_stream))
-
-            for page_num, page in enumerate(pdf_pages, 1):
-                output_string = None
-                device = None
-                try:
-                    # Create a new StringIO for each page
-                    output_string = io.StringIO()
-                    device = TextConverter(rsrcmgr, output_string, laparams=laparams)
-                    interpreter = PDFPageInterpreter(rsrcmgr, device)
-
-                    # Process the page
-                    interpreter.process_page(page)
-
-                    # Get the text content
-                    text = output_string.getvalue()
-
-                    # Add page info
-                    pages.append(PageInfo(page_number=page_num, content=text.strip()))
-
-                finally:
-                    # Clean up resources
-                    if device:
-                        device.close()
-                    if output_string:
-                        output_string.close()
-
-        except Exception:
-            # If page-by-page extraction fails, fall back to full document extraction
-            file_stream.seek(0)
-            full_text = pdfminer.high_level.extract_text(file_stream)
-            pages = [PageInfo(page_number=1, content=full_text.strip())]
-
-        return pages
+        return [
+            PageInfo(
+                page_number=page_number,
+                content="".join(
+                    element.get_text()
+                    for element in page_layout
+                    if isinstance(element, (LTTextBox, LTTextLine))
+                ),
+            )
+            for page_number, page_layout in enumerate(
+                pdfminer.high_level.extract_pages(file_stream), start=1
+            )
+            if isinstance(page_layout, LTPage)
+        ]

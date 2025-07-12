@@ -1,7 +1,7 @@
 import sys
 from typing import BinaryIO, Any
 from ._html_converter import HtmlConverter
-from .._base_converter import DocumentConverter, DocumentConverterResult
+from .._base_converter import DocumentConverter, DocumentConverterResult, PageInfo
 from .._exceptions import MissingDependencyException, MISSING_DEPENDENCY_MESSAGE
 from .._stream_info import StreamInfo
 
@@ -82,17 +82,24 @@ class XlsxConverter(DocumentConverter):
 
         sheets = pd.read_excel(file_stream, sheet_name=None, engine="openpyxl")
         md_content = ""
-        for s in sheets:
+        pages = [] if kwargs.get("extract_pages", False) else None
+        for page_number, s in enumerate(sheets, start=1):
             md_content += f"## {s}\n"
             html_content = sheets[s].to_html(index=False)
-            md_content += (
-                self._html_converter.convert_string(
-                    html_content, **kwargs
-                ).markdown.strip()
+            page_md_content = (
+                self._html_converter.convert_string(html_content, **kwargs).markdown.strip()
                 + "\n\n"
             )
+            pages.append(
+                PageInfo(page_number=page_number, content=(f"## {s}\n" + page_md_content).strip())
+            ) if pages is not None else None
+            md_content += page_md_content
 
-        return DocumentConverterResult(markdown=md_content.strip())
+        return (
+            DocumentConverterResult(markdown=md_content.strip())
+            if not pages
+            else DocumentConverterResult(markdown=md_content.strip(), pages=pages)
+        )
 
 
 class XlsConverter(DocumentConverter):

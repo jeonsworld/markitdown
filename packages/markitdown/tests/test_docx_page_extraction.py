@@ -42,10 +42,6 @@ class TestDocxPageExtraction:
 
     def test_docx_page_extraction_enabled(self):
         """Test DOCX conversion with page extraction enabled.
-
-        Note: DOCX files don't have fixed pages like PDFs.
-        Page breaks depend on rendering settings. Currently,
-        this returns None for pages even with extract_pages=True.
         """
         if not os.path.exists(self.test_docx_path):
             pytest.skip("Test DOCX file not found")
@@ -57,8 +53,11 @@ class TestDocxPageExtraction:
         assert isinstance(result.markdown, str)
         assert len(result.markdown) > 0
 
-        # Currently, DOCX doesn't support page extraction due to dynamic pagination
-        assert result.pages is None
+        assert result.pages is not None
+        assert len(result.pages) == 2
+
+        # Markdown text should be equal to concatenation of pages
+        assert result.markdown == "".join([elem.content for elem in result.pages])
 
     def test_docx_page_extraction_disabled(self):
         """Test DOCX conversion with page extraction explicitly disabled."""
@@ -89,10 +88,12 @@ class TestDocxPageExtraction:
         assert result1.title == result2.title
         assert result1.title == result3.title
 
-        # All should have None for pages (DOCX limitation)
+        # First two should have None for pages
         assert result1.pages is None
         assert result2.pages is None
-        assert result3.pages is None
+
+        assert result3.pages is not None
+        assert len(result3.pages) == 2
 
         # All should work with string conversion
         assert str(result1) == str(result2)
@@ -109,14 +110,16 @@ class TestDocxPageExtraction:
 
         # Test with different truthy/falsy values
         result_false = self.markitdown.convert(self.test_docx_path, extract_pages=False)
-        result_true = self.markitdown.convert(self.test_docx_path, extract_pages=True)
         result_none = self.markitdown.convert(self.test_docx_path, extract_pages=None)
         result_zero = self.markitdown.convert(self.test_docx_path, extract_pages=0)
+        result_true = self.markitdown.convert(self.test_docx_path, extract_pages=True)
         result_one = self.markitdown.convert(self.test_docx_path, extract_pages=1)
 
-        # All should return None for pages (DOCX limitation)
+        # These return None for pages
         assert result_false.pages is None
-        assert result_true.pages is None
         assert result_none.pages is None
         assert result_zero.pages is None
-        assert result_one.pages is None
+
+        # These return not None for pages
+        assert result_true.pages is not None
+        assert result_one.pages is not None

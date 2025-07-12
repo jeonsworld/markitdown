@@ -31,6 +31,7 @@ dependencies = [
   "charset-normalizer",
   "defusedxml",
   "onnxruntime<=1.20.1; sys_platform == 'win32'",
+  "python-docx>=1.2.0",
 ]
 
 [project.optional-dependencies]
@@ -41,6 +42,7 @@ all = [
   "openpyxl",
   "xlrd",
   "lxml",
+  "python-docx",
   "pdfminer.six",
   "olefile",
   "pydub",
@@ -50,7 +52,7 @@ all = [
   "azure-identity"
 ]
 pptx = ["python-pptx"]
-docx = ["mammoth", "lxml"]
+docx = ["mammoth", "lxml", "python-docx"]
 xlsx = ["pandas", "openpyxl"]
 xls = ["pandas", "xlrd"]
 pdf = ["pdfminer.six"]
