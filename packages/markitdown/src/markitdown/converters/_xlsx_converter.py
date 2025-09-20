@@ -21,6 +21,9 @@ try:
 except ImportError:
     _xls_dependency_exc_info = sys.exc_info()
 
+from python_calamine import load_workbook
+from tabulate import tabulate
+
 ACCEPTED_XLSX_MIME_TYPE_PREFIXES = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 ]
@@ -80,19 +83,23 @@ class XlsxConverter(DocumentConverter):
                 _xlsx_dependency_exc_info[2]
             )
 
+        # Check if page-level extraction is requested
+        extract_pages = kwargs.get("extract_pages", False)
+
         sheets = pd.read_excel(file_stream, sheet_name=None, engine="openpyxl")
         md_content = ""
-        for s in sheets:
+        page_info = []
+        for page_num, s in enumerate(sheets):
             md_content += f"## {s}\n"
             html_content = sheets[s].to_html(index=False)
-            md_content += (
-                self._html_converter.convert_string(
-                    html_content, **kwargs
-                ).markdown.strip()
-                + "\n\n"
-            )
+            page_content = self._html_converter.convert_string(html_content, **kwargs).markdown.strip() + "\n\n"
+            md_content += page_content
+            page_info.append({"page_number": page_num+1, "content": page_content})
 
-        return DocumentConverterResult(markdown=md_content.strip())
+        if extract_pages:
+            return DocumentConverterResult(markdown=md_content.strip(), pages=page_info)
+        else:
+            return DocumentConverterResult(markdown=md_content.strip())
 
 
 class XlsConverter(DocumentConverter):
@@ -141,17 +148,23 @@ class XlsConverter(DocumentConverter):
             ].with_traceback(  # type: ignore[union-attr]
                 _xls_dependency_exc_info[2]
             )
+        # Check if page-level extraction is requested
+        extract_pages = kwargs.get("extract_pages", False)
 
-        sheets = pd.read_excel(file_stream, sheet_name=None, engine="xlrd")
+        # sheets = pd.read_excel(file_stream, sheet_name=None, engine="calamine")
+        workbook = load_workbook(file_stream)
         md_content = ""
-        for s in sheets:
+        page_info = []
+        for page_num, s in enumerate(workbook.sheet_names):
+            sheet = workbook.get_sheet_by_name(s)
+            tabular_data = sheet.to_python(skip_empty_area=False)
             md_content += f"## {s}\n"
-            html_content = sheets[s].to_html(index=False)
-            md_content += (
-                self._html_converter.convert_string(
-                    html_content, **kwargs
-                ).markdown.strip()
-                + "\n\n"
-            )
+            html_content = tabulate(tabular_data, tablefmt="html")
+            page_content = self._html_converter.convert_string(html_content, **kwargs).markdown.strip() + "\n\n"
+            md_content += page_content
+            page_info.append({"page_number": page_num+1, "content": page_content})
 
-        return DocumentConverterResult(markdown=md_content.strip())
+        if extract_pages:
+            return DocumentConverterResult(markdown=md_content.strip(), pages=page_info)
+        else:
+            return DocumentConverterResult(markdown=md_content.strip())

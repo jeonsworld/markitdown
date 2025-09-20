@@ -47,7 +47,9 @@ all = [
   "SpeechRecognition",
   "youtube-transcript-api~=1.0.0",
   "azure-ai-documentintelligence",
-  "azure-identity"
+  "azure-identity",
+  "python-calamine",
+  "tabulate"
 ]
 pptx = ["python-pptx"]
 docx = ["mammoth", "lxml"]
